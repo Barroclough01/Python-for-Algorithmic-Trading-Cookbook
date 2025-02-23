@@ -81,17 +81,25 @@ class IBApp(IBWrapper, IBClient):
         net_liquidation = self.get_account_values("NetLiquidation")[0]
         cvar_ = ep.conditional_value_at_risk(self.account_returns)
         return (cvar_, cvar_ * net_liquidation)
-
+    
 
 if __name__ == "__main__":
     app = IBApp("127.0.0.1", 7497, client_id=12, account="DUH506452")
     try:
+        # Phillips 66 stock
         psx = stock("PSX", "SMART", "USD")
-        ho = future("HO", "NYMEX", "202503")
-        rb = future("RB", "NYMEX", "202503")
-        cl = future("CL", "NYMEX", "202503")
+        
+        # Heating Oil future
+        ho = future("HO", "NYMEX", "202504")
+        
+        # RBOB Gasoline future
+        rb = future("RB", "NYMEX", "202504")
+        
+        # Crude Oil future
+        cl = future("CL", "NYMEX", "202504")
+        
         contracts = [psx, ho, rb, cl]
-    
+        
         window = 60
         thresh = 1
         request_id = 1
@@ -103,7 +111,7 @@ if __name__ == "__main__":
                 duration="1 D",
                 bar_size="1 min",
             ).dropna()
- 
+            # print('HERE')
             data["crack_spread"] = data.HO + 2 * data.RB - 3 * data.CL
             data["crack_spread_rank"] = data.crack_spread.rolling(window).rank(pct=True)
             data["refiner_rank"] = data.PSX.rolling(window).rank(pct=True)

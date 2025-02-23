@@ -7,7 +7,8 @@ def future(symbol, exchange, contract_month):
     contract.exchange = exchange
     contract.lastTradeDateOrContractMonth = contract_month
     contract.secType = "FUT"
-
+    contract.primaryExchange = exchange
+    contract.currency = "USD"
     return contract
 
 
@@ -17,7 +18,7 @@ def stock(symbol, exchange, currency):
     contract.exchange = exchange
     contract.currency = currency
     contract.secType = "STK"
-
+    contract.primaryExchange = exchange
     return contract
 
 
@@ -29,7 +30,8 @@ def option(symbol, exchange, contract_month, strike, right):
     contract.strike = strike
     contract.right = right
     contract.secType = "OPT"
-
+    contract.primaryExchange = exchange
+    contract.currency = "USD"
     return contract
 
 
@@ -39,7 +41,7 @@ def combo_leg(contract_details, ratio, action):
     leg.ratio = ratio
     leg.action = action
     leg.exchange = contract_details.contract.exchange
-
+    leg.primaryExchange = contract_details.contract.primaryExchange
     return leg
 
 
@@ -50,5 +52,6 @@ def spread(legs):
     contract.currency = "USD"
     contract.exchange = "SMART"
     contract.comboLegs = legs
+    contract.primaryExchange = "SMART"
 
     return contract
