@@ -56,5 +56,6 @@ if __name__ == "__main__":
     app = IBApp("127.0.0.1", 7497, client_id=12, account="DU7129120")
 
     positions = app.get_positions()
+    print(positions)
 
     app.disconnect()

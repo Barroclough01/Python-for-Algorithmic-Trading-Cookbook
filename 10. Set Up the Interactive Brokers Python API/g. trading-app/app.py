@@ -5,7 +5,8 @@ import sqlite3
 
 from wrapper import IBWrapper
 from client import IBClient
-from contract import future
+from contract import future, stock, option
+from order import limit, BUY
 
 
 class IBApp(IBWrapper, IBClient):
@@ -51,10 +52,13 @@ class IBApp(IBWrapper, IBClient):
 
 
 if __name__ == "__main__":
-    app = IBApp("127.0.0.1", 7497, client_id=10)
-
-    es = future("ES", "CME", "202312")
-
-    app.stream_to_sqlite(99, es, run_for_in_seconds=30)
-
-    app.disconnect()
+    try:
+        app = IBApp("127.0.0.1", 7497, client_id=10)
+        es = future('ES', 'CME', '202312')
+        app.stream_to_sqlite(99, es, run_for_in_seconds=30)
+    except Exception as e:
+        print(e)
+    else:
+        time.sleep(10)
+    finally:
+        app.disconnect()

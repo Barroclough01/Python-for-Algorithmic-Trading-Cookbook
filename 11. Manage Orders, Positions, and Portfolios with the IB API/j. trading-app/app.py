@@ -51,10 +51,15 @@ class IBApp(IBWrapper, IBClient):
 
 
 if __name__ == "__main__":
-    app = IBApp("127.0.0.1", 7497, client_id=12, account="DU7129120")
-
-    account_values = app.get_account_values()
-
-    net_liquidation = app.get_account_values("NetLiquidation")
-
-    app.disconnect()
+    try:
+        app = IBApp("127.0.0.1", 7497, client_id=12, account="DU7129120")
+    
+        account_values = app.get_account_values()
+    
+        net_liquidation = app.get_account_values("NetLiquidation")
+    except Exception as e:
+        print(e)
+    else:
+        print(net_liquidation)
+    finally:
+        app.disconnect()

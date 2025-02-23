@@ -84,35 +84,39 @@ class IBApp(IBWrapper, IBClient):
 
 
 if __name__ == "__main__":
-    app = IBApp("127.0.0.1", 7497, client_id=11, account="DU7129120")
+    app = IBApp("127.0.0.1", 7497, client_id=11, account="DUH506452")
+    try:
+        short_call = app.resolve_contract(option("TSLA", "SMART", "202503", 295, "CALL"))
+        long_call = app.resolve_contract(option("TSLA", "SMART", "202503", 305, "CALL"))
+        short_put = app.resolve_contract(option("TSLA", "SMART", "202503", 240, "PUT"))
+        long_put = app.resolve_contract(option("TSLA", "SMART", "202503", 230, "PUT"))
+        
+        leg_1 = combo_leg(short_call, 1, SELL)
+        leg_2 = combo_leg(long_call, 1, BUY)
+        leg_3 = combo_leg(short_put, 1, SELL)
+        leg_4 = combo_leg(long_put, 1, BUY)
+        
+        short_iron_condor = spread([leg_1, leg_2, leg_3, leg_4])
+        
+        order = market(BUY, 1)
+        app.send_order(short_iron_condor, order)
+        # long_call_contract = option("TSLA", "SMART", "202503", 260, "CALL")
+        # long_call = app.resolve_contract(long_call_contract)
+    
+        # long_put_contract = option("TSLA", "SMART", "202504", 260, "PUT")
+        # long_put = app.resolve_contract(long_put_contract)
+    
+        # leg_1 = combo_leg(long_call, 1, BUY)
+        # leg_2 = combo_leg(long_put, 1, BUY)
+    
+        # long_strangle = spread([leg_1, leg_2])
+    
+        # order = market(BUY, 1)
+        # app.send_order(long_strangle, order)
+    except Exception as e:
+        print(e)
+    else:
+        time.sleep(30)
 
-    long_call_contract = option("TSLA", "SMART", "202403", 260, "CALL")
-    long_call = app.resolve_contract(long_call_contract)
-
-    long_put_contract = option("TSLA", "SMART", "202404", 260, "PUT")
-    long_put = app.resolve_contract(long_put_contract)
-
-    leg_1 = combo_leg(long_call, 1, BUY)
-    leg_2 = combo_leg(long_put, 1, BUY)
-
-    long_strangle = spread([leg_1, leg_2])
-
-    order = market(BUY, 1)
-    app.send_order(long_strangle, order)
-
-    short_call = app.resolve_contract(option("TSLA", "SMART", "202403", 295, "CALL"))
-    long_call = app.resolve_contract(option("TSLA", "SMART", "202403", 305, "CALL"))
-    short_put = app.resolve_contract(option("TSLA", "SMART", "202403", 240, "PUT"))
-    long_put = app.resolve_contract(option("TSLA", "SMART", "202403", 230, "PUT"))
-
-    leg_1 = combo_leg(short_call, 1, SELL)
-    leg_2 = combo_leg(long_call, 1, BUY)
-    leg_3 = combo_leg(short_put, 1, SELL)
-    leg_4 = combo_leg(long_put, 1, BUY)
-
-    short_iron_condor = spread([leg_1, leg_2, leg_3, leg_4])
-
-    order = market(BUY, 1)
-    app.send_order(short_iron_condor, order)
-
-    app.disconnect()
+    finally:
+        app.disconnect()

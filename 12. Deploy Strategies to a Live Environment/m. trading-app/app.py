@@ -7,7 +7,7 @@ import sqlite3
 from wrapper import IBWrapper
 from client import IBClient
 from contract import stock, future, option
-from order import limit, BUY
+from order import limit, BUY, market, stop
 
 
 class IBApp(IBWrapper, IBClient):
@@ -58,45 +58,50 @@ class IBApp(IBWrapper, IBClient):
 
     @property
     def cumulative_returns(self):
-        return ep.cum_returns(self.account_returns, 1)
+        return ep.cum_returns(self.portfolio_returns, 1)
 
     @property
     def max_drawdown(self):
-        return ep.max_drawdown(self.account_returns)
+        return ep.max_drawdown(self.portfolio_returns)
 
     @property
     def volatility(self):
-        return self.account_returns.std(ddof=1)
+        return self.portfolio_returns.std(ddof=1)
 
     @property
     def omega_ratio(self):
-        return ep.omega_ratio(self.account_returns, annualization=1)
+        return ep.omega_ratio(self.portfolio_returns, annualization=1)
 
     @property
     def sharpe_ratio(self):
-        return self.account_returns.mean() / self.account_returns.std(ddof=1)
+        return self.portfolio_returns.mean() / self.portfolio_returns.std(ddof=1)
 
     @property
     def cvar(self):
         net_liquidation = self.get_account_values("NetLiquidation")[0]
-        cvar_ = ep.conditional_value_at_risk(self.account_returns)
+        cvar_ = ep.conditional_value_at_risk(self.portfolio_returns)
         return (cvar_, cvar_ * net_liquidation)
 
 
 if __name__ == "__main__":
-    app = IBApp("127.0.0.1", 7497, client_id=11, account="DU7129120")
+    try:
+        app = IBApp("127.0.0.1", 7497, client_id=11, account="DUH506452")
+ 
+        time.sleep(10)
 
-    time.sleep(200)
+        print(app.cumulative_returns)
+        print(app.max_drawdown)
+        print(app.volatility)
+        print(app.omega_ratio)
+        print(app.sharpe_ratio)
+        print(app.cvar)
+        
+    except Exception as e:
+        print(e)
+    else:
+        pass
+    finally:
+        app.disconnect()
+    
 
-    print(app.cumulative_returns)
-    print(app.max_drawdown)
-    print(app.volatility)
-    print(app.omega_ratio)
-    print(app.sharpe_ratio)
-    print(app.cvar)
-
-    # request_id, warm_up=5, interval=60, pnl_type="unrealized_pnl"
-    # for snapshot in app.stream_portfolio_returns(request_id=99, window=5, interval=5, pnl_type="unrealized_pnl"):
-    #     print(snapshot)
-
-    app.disconnect()
+    

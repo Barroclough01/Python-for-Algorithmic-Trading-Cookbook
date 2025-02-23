@@ -122,44 +122,49 @@ def make_pipeline():
 
 
 if __name__ == "__main__":
-    app = IBApp("127.0.0.1", 7497, client_id=11, account="DU7129120")
-
-    top_n = 10
-    xnys = xcals.get_calendar("XNYS")
-    today = pd.Timestamp.today().strftime("%Y-%m-%d")
-    start_date = xnys.session_offset(today, count=-252).strftime("%Y-%m-%d")
-
-    load_extensions(True, [], False, os.environ)
-    bundles.ingest("quotemedia")
-    bundle_data = load("quotemedia", os.environ, None)
-
-    pipeline_loader = USEquityPricingLoader(
-        bundle_data.equity_daily_bar_reader,
-        bundle_data.adjustment_reader,
-        fx_reader=None,
-    )
-
-    engine = SimplePipelineEngine(
-        get_loader=lambda col: pipeline_loader, asset_finder=bundle_data.asset_finder
-    )
-
-    results = engine.run_pipeline(make_pipeline(), start_date, today)
-
-    results.dropna(subset="factor", inplace=True)
-    results.index.names = ["date", "symbol"]
-    results.sort_values(by=["date", "factor"], inplace=True)
-
-    longs = results.xs("2023-12-15", level=0).query("longs == True")
-    shorts = results.xs("2023-12-15", level=0).query("shorts == True")
-
-    weight = 1 / top_n / 2
-
-    for row in pd.concat([longs, shorts]).itertuples():
-        side = 1 if row.longs else -1
-        symbol = row.Index.symbol
-
-        contract = stock(symbol, "SMART", "USD")
-        app.order_target_percent(contract, market, side * weight)
-
-    time.sleep(30)
-    app.disconnect()
+    app = IBApp("127.0.0.1", 7497, client_id=11, account="DUH506452")
+    try:
+    
+        top_n = 10
+        xnys = xcals.get_calendar("XNYS")
+        # today = pd.Timestamp.today().strftime("%Y-%m-%d")
+        most_recent_session = xnys.date_to_session('2018-01-01', direction = 'previous').strftime('%Y-%m-%d')
+        start_date = xnys.session_offset(most_recent_session, count=-252).strftime("%Y-%m-%d")
+      
+        load_extensions(True, [], False, os.environ)
+        # bundles.ingest("quandl")
+        bundle_data = load("quandl", os.environ, None)
+     
+        pipeline_loader = USEquityPricingLoader(
+            bundle_data.equity_daily_bar_reader,
+            bundle_data.adjustment_reader,
+            fx_reader=None,
+        )
+    
+        engine = SimplePipelineEngine(
+            get_loader=lambda col: pipeline_loader, asset_finder=bundle_data.asset_finder
+        )
+    
+        results = engine.run_pipeline(make_pipeline(), start_date, most_recent_session)
+    
+        results.dropna(subset="factor", inplace=True)
+        results.index.names = ["date", "symbol"]
+        results.sort_values(by=["date", "factor"], inplace=True)
+    
+        longs = results.xs(most_recent_session, level=0).query("longs == True")
+        shorts = results.xs(most_recent_session, level=0).query("shorts == True")
+    
+        weight = 1 / top_n / 2
+    
+        for row in pd.concat([longs, shorts]).itertuples():
+            side = 1 if row.longs else -1
+            symbol = row.Index.symbol
+    
+            contract = stock(symbol, "SMART", "USD")
+            app.order_target_percent(contract, market, side * weight)
+    except Exception as e:
+        print(e)
+    else:
+        time.sleep(30)
+    finally:
+        app.disconnect()

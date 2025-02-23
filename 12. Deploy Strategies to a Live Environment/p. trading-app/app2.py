@@ -1,14 +1,10 @@
 import threading
-import time
 import empyrical as ep
-
 import sqlite3
-
-from wrapper import IBWrapper
-from client import IBClient
+from wrapper2 import IBWrapper
+from client2 import IBClient
 from contract import stock, future
 from order import market, BUY, SELL
-
 
 class IBApp(IBWrapper, IBClient):
     def __init__(self, ip, port, client_id, account, interval=5):
@@ -17,16 +13,24 @@ class IBApp(IBWrapper, IBClient):
         self.account = account
         self.create_table()
 
+        # Connect and wait for connection confirmation
         self.connect(ip, port, client_id)
-
+        
+        # Start the client thread
         threading.Thread(target=self.run, daemon=True).start()
-        time.sleep(5)
+        
+        # Wait for connection with timeout
+        if not self.wait_for_connection(timeout=10):
+            raise ConnectionError("Failed to connect to TWS")
+
+        # Start PnL streaming thread
         threading.Thread(
             target=self.get_streaming_returns,
             args=(99, interval, "unrealized_pnl"),
             daemon=True,
         ).start()
 
+    # Rest of the class implementation remains the same as it doesn't use time.sleep
     @property
     def connection(self):
         return sqlite3.connect("tick_data.sqlite", isolation_level=None)
@@ -82,7 +86,6 @@ class IBApp(IBWrapper, IBClient):
         cvar_ = ep.conditional_value_at_risk(self.account_returns)
         return (cvar_, cvar_ * net_liquidation)
 
-
 if __name__ == "__main__":
     app = IBApp("127.0.0.1", 7497, client_id=12, account="DUH506452")
     try:
@@ -96,6 +99,9 @@ if __name__ == "__main__":
         thresh = 1
         request_id = 1
     
+        # Create event for controlled main loop timing
+        timer_event = threading.Event()
+        
         while True:
             data = app.get_historical_data_for_many(
                 request_id=request_id,
@@ -126,13 +132,13 @@ if __name__ == "__main__":
             elif signal <= 0 and holding:
                 app.order_target_percent(psx, market, 0)
 
-            time.sleep(30)
+            # Wait for 30 seconds using event instead of sleep
+            timer_event.wait(timeout=30)
+            timer_event.clear()
 
             request_id += len(contracts)
             
     except Exception as e:
         print(e)
-    else:
-        pass
     finally:
         app.disconnect()

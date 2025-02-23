@@ -10,7 +10,8 @@ def market(action, quantity):
     order.action = action
     order.orderType = "MKT"
     order.totalQuantity = quantity
-
+    order.eTradeOnly = False
+    order.firmQuoteOnly = False
     return order
 
 
@@ -20,6 +21,8 @@ def limit(action, quantity, limit_price):
     order.orderType = "LMT"
     order.totalQuantity = quantity
     order.lmtPrice = limit_price
+    order.eTradeOnly = False
+    order.firmQuoteOnly = False
     return order
 
 
@@ -29,4 +32,6 @@ def stop(action, quantity, stop_price):
     order.orderType = "STP"
     order.auxPrice = stop_price
     order.totalQuantity = quantity
+    order.eTradeOnly = False
+    order.firmQuoteOnly = False
     return order

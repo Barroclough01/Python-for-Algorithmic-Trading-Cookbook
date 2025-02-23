@@ -184,19 +184,19 @@ class IBClient(EClient):
 
     def get_account_values(self, key=None):
         self.reqAccountUpdates(True, self.account)
-        time.sleep(2)
+        time.sleep(4)
         if key:
             return self.account_values[key]
         return self.account_values
 
     def get_positions(self):
         self.reqAccountUpdates(True, self.account)
-        time.sleep(2)
+        time.sleep(4)
         return self.positions
 
     def get_pnl(self, request_id):
         self.reqPnL(request_id, self.account, "")
-        time.sleep(2)
+        time.sleep(4)
         self.cancelPnL(reqId=request_id)
         return self.account_pnl
 

@@ -1,6 +1,3 @@
-import time
-import pandas as pd
-
 from utils import (
     Tick,
     TRADE_BAR_PROPERTIES,
@@ -8,19 +5,78 @@ from utils import (
     DEFAULT_CONTRACT_ID,
 )
 from order import BUY, SELL
-
 from ibapi.client import EClient
-
+import threading
+import pandas as pd
 
 class IBClient(EClient):
     def __init__(self, wrapper):
         EClient.__init__(self, wrapper)
+        self.DEFAULT_TIMEOUT = 10
+
+    def get_market_data(self, request_id, contract, tick_type=4):
+        # Create and clear event for this request
+        self.wrapper.market_data_events[request_id] = threading.Event()
+        self.wrapper.market_data_events[request_id].clear()
+        
+        self.reqMktData(
+            reqId=request_id,
+            contract=contract,
+            genericTickList="4",
+            snapshot=True,
+            regulatorySnapshot=False,
+            mktDataOptions=[],
+        )
+        
+        if not self.wrapper.market_data_events[request_id].wait(timeout=self.DEFAULT_TIMEOUT):
+            raise TimeoutError(f"Market data request {request_id} timed out")
+
+        self.cancelMktData(reqId=request_id)
+        
+        # Cleanup
+        del self.wrapper.market_data_events[request_id]
+        return self.wrapper.market_data[request_id][tick_type]
+        
+    def get_historical_data_for_many(
+        self, request_id, contracts, duration, bar_size, col_to_use="close"
+    ):
+        dfs = []
+        for contract in contracts:
+            data = self.get_historical_data(request_id, contract, duration, bar_size)
+            dfs.append(data)
+            request_id += 1
+        df = pd.concat(dfs).reset_index().pivot(index="time", columns="symbol", values=col_to_use)
+        return df
+
+    def get_pnl(self, request_id):
+        self.wrapper.pnl_data_events[request_id] = threading.Event()
+        self.wrapper.pnl_data_events[request_id].clear()
+        
+        self.reqPnL(request_id, self.account, "")
+        
+        if not self.wrapper.pnl_data_events[request_id].wait(timeout=self.DEFAULT_TIMEOUT):
+            raise TimeoutError(f"PnL request {request_id} timed out")
+            
+        self.cancelPnL(reqId=request_id)
+        
+        # Cleanup
+        del self.wrapper.pnl_data_events[request_id]
+        return self.wrapper.account_pnl
+
+    def wait_for_connection(self, timeout=None):
+        """Wait for TWS connection to be established"""
+        if timeout is None:
+            timeout = self.DEFAULT_TIMEOUT
+        return self.wrapper.connection_event.wait(timeout)
 
     def resolve_contract(self, contract, request_id=DEFAULT_CONTRACT_ID):
+        self.wrapper.contract_details_event.clear()
         self.reqContractDetails(reqId=request_id, contract=contract)
-        time.sleep(2)
-        self.contractDetailsEnd(reqId=request_id)
-        return self.resolved_contract
+        
+        if not self.wrapper.contract_details_event.wait(timeout=self.DEFAULT_TIMEOUT):
+            raise TimeoutError("Contract details request timed out")
+            
+        return self.wrapper.resolved_contract
 
     def cancel_all_orders(self):
         self.reqGlobalCancel()
@@ -115,6 +171,10 @@ class IBClient(EClient):
         return self._calculate_order_target_quantity(contract, target_quantity)
 
     def get_historical_data(self, request_id, contract, duration, bar_size):
+        # Create and clear event for this request
+        self.wrapper.historical_data_events[request_id] = threading.Event()
+        self.wrapper.historical_data_events[request_id].clear()
+        
         self.reqHistoricalData(
             reqId=request_id,
             contract=contract,
@@ -127,47 +187,28 @@ class IBClient(EClient):
             keepUpToDate=False,
             chartOptions=[],
         )
-        time.sleep(5)
+        
+        # Wait for historical data
+        if not self.wrapper.historical_data_events[request_id].wait(timeout=self.DEFAULT_TIMEOUT):
+            raise TimeoutError(f"Historical data request {request_id} timed out")
+
         bar_sizes = ["day", "D", "week", "W", "month"]
         if any(x in bar_size for x in bar_sizes):
             fmt = "%Y%m%d"
         else:
             fmt = "%Y%m%d %H:%M:%S"
 
-        data = self.historical_data[request_id]
+        data = self.wrapper.historical_data[request_id]
 
         df = pd.DataFrame(data, columns=TRADE_BAR_PROPERTIES)
         df.set_index(pd.to_datetime(df.time, format=fmt), inplace=True)
         df.drop("time", axis=1, inplace=True)
         df["symbol"] = contract.symbol
         df.request_id = request_id
+        
+        # Cleanup
+        del self.wrapper.historical_data_events[request_id]
         return df
-
-    def get_historical_data_for_many(
-        self, request_id, contracts, duration, bar_size, col_to_use="close"
-    ):
-        dfs = []
-        for contract in contracts:
-            data = self.get_historical_data(request_id, contract, duration, bar_size)
-            dfs.append(data)
-            request_id += 1
-        df = pd.concat(dfs).reset_index().pivot(index="time", columns="symbol", values=col_to_use)
-        return df
-
-    def get_market_data(self, request_id, contract, tick_type=4):
-        self.reqMktData(
-            reqId=request_id,
-            contract=contract,
-            genericTickList="4",
-            snapshot=True,
-            regulatorySnapshot=False,
-            mktDataOptions=[],
-        )
-        time.sleep(5)
-
-        self.cancelMktData(reqId=request_id)
-
-        return self.market_data[request_id][tick_type]
 
     def get_streaming_data(self, request_id, contract):
         self.reqTickByTickData(
@@ -177,40 +218,51 @@ class IBClient(EClient):
             numberOfTicks=0,
             ignoreSize=True,
         )
-        time.sleep(10)
+        
+        # Initial wait for data setup
+        initial_timeout = 10
+        if not self.wrapper.stream_event.wait(timeout=initial_timeout):
+            raise TimeoutError("Initial streaming data setup timed out")
 
         while True:
-            if self.stream_event.is_set():
-                yield Tick(*self.streaming_data[request_id])
-                self.stream_event.clear()
+            if self.wrapper.stream_event.wait(timeout=1.0):  # More responsive waiting
+                yield Tick(*self.wrapper.streaming_data[request_id])
+                self.wrapper.stream_event.clear()
 
     def stop_streaming_data(self, request_id):
         self.cancelTickByTickData(reqId=request_id)
 
     def get_account_values(self, key=None):
+        self.wrapper.account_data_event.clear()
         self.reqAccountUpdates(True, self.account)
-        time.sleep(2)
+        
+        if not self.wrapper.account_data_event.wait(timeout=self.DEFAULT_TIMEOUT):
+            raise TimeoutError("Account data request timed out")
+            
         if key:
-            return self.account_values[key]
-        return self.account_values
+            return self.wrapper.account_values[key]
+        return self.wrapper.account_values
 
     def get_positions(self):
+        self.wrapper.position_data_event.clear()
         self.reqAccountUpdates(True, self.account)
-        time.sleep(2)
-        return self.positions
-
-    def get_pnl(self, request_id):
-        self.reqPnL(request_id, self.account, "")
-        time.sleep(2)
-        self.cancelPnL(reqId=request_id)
-        return self.account_pnl
-
+        
+        if not self.wrapper.position_data_event.wait(timeout=self.DEFAULT_TIMEOUT):
+            raise TimeoutError("Position data request timed out")
+            
+        return self.wrapper.positions
+        
     def get_streaming_pnl(self, request_id, interval=60, pnl_type="unrealized_pnl"):
-        interval = max(interval, 5) - 2
+        interval = max(interval, 5)
+        wait_time = interval - 2  # Adjusted for processing time
+        
         while True:
             pnl = self.get_pnl(request_id=request_id)
             yield {"date": pd.Timestamp.now(), "pnl": pnl[request_id].get(pnl_type)}
-            time.sleep(interval)
+            
+            # More precise waiting
+            event = threading.Event()
+            event.wait(timeout=wait_time)
 
     def get_streaming_returns(self, request_id, interval, pnl_type):
         returns = pd.Series(dtype=float)

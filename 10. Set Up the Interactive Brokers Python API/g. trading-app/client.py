@@ -22,6 +22,7 @@ class IBClient(EClient):
             formatDate=1,
             keepUpToDate=False,
             chartOptions=[],
+            
         )
         time.sleep(5)
 
@@ -55,11 +56,11 @@ class IBClient(EClient):
             .pivot(index="time", columns="symbol", values=col_to_use)
         )
 
-    def get_market_data(self, request_id, contract, tick_type=4):
+    def get_market_data(self, request_id, contract, tick_type=9):
         self.reqMktData(
             reqId=request_id,
             contract=contract,
-            genericTickList="4",
+            genericTickList="",
             snapshot=True,
             regulatorySnapshot=False,
             mktDataOptions=[],

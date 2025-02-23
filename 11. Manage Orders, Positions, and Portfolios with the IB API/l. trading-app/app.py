@@ -53,8 +53,9 @@ class IBApp(IBWrapper, IBClient):
 
 
 if __name__ == "__main__":
-    app = IBApp("127.0.0.1", 7497, client_id=12, account="DU7129120")
+    app = IBApp("127.0.0.1", 7497, client_id=12, account="U17369428")
 
     pnl = app.get_pnl(request_id=99)
+    print(pnl)
 
     app.disconnect()

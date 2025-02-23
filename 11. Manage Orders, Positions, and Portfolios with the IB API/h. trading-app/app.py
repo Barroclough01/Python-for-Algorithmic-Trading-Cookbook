@@ -52,15 +52,20 @@ class IBApp(IBWrapper, IBClient):
 
 
 if __name__ == "__main__":
-    app = IBApp("127.0.0.1", 7497, client_id=11)
-
-    aapl = stock("AAPL", "SMART", "USD")
-    gbl = future("GBL", "EUREX", "202403")
-    pltr = option("PLTR", "BOX", "20240315", 20, "C")
-
-    limit_order = limit(BUY, 100, 190.00)
-
-    app.send_order(aapl, limit_order)
-
-    time.sleep(30)
-    app.disconnect()
+    try:
+        app = IBApp("127.0.0.1", 7497, client_id=11)
+    
+        aapl = stock("AAPL", "SMART", "USD")
+        gbl = future("GBL", "EUREX", "202403")
+        pltr = option("PLTR", "BOX", "20240315", 20, "C")
+    
+        limit_order = limit(BUY, 100, 190.00)
+    
+        app.send_order(aapl, limit_order)
+        
+    except Exception as e:
+        print(e)
+    else:
+        time.sleep(15)
+    finally:
+        app.disconnect()

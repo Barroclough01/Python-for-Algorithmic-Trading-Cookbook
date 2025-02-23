@@ -16,6 +16,7 @@ def stock(symbol, exchange, currency):
     contract.symbol = symbol
     contract.exchange = exchange
     contract.currency = currency
+    contract.primaryExchange = 'NASDAQ'
     contract.secType = "STK"
 
     return contract

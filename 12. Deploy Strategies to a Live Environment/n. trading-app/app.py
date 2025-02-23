@@ -7,7 +7,7 @@ import sqlite3
 from wrapper import IBWrapper
 from client import IBClient
 from contract import stock
-from order import market, limit, BUY, SELL
+from order import market, limit, BUY, SELL, stop
 
 
 class IBApp(IBWrapper, IBClient):
@@ -58,52 +58,71 @@ class IBApp(IBWrapper, IBClient):
 
     @property
     def cumulative_returns(self):
-        return ep.cum_returns(self.account_returns, 1)
+        return ep.cum_returns(self.portfolio_returns, 1)
 
     @property
     def max_drawdown(self):
-        return ep.max_drawdown(self.account_returns)
+        return ep.max_drawdown(self.portfolio_returns)
 
     @property
     def volatility(self):
-        return self.account_returns.std(ddof=1)
+        return self.portfolio_returns.std(ddof=1)
 
     @property
     def omega_ratio(self):
-        return ep.omega_ratio(self.account_returns, annualization=1)
+        return ep.omega_ratio(self.portfolio_returns, annualization=1)
 
     @property
     def sharpe_ratio(self):
-        return self.account_returns.mean() / self.account_returns.std(ddof=1)
+        return self.portfolio_returns.mean() / self.portfolio_returns.std(ddof=1)
 
     @property
     def cvar(self):
         net_liquidation = self.get_account_values("NetLiquidation")[0]
-        cvar_ = ep.conditional_value_at_risk(self.account_returns)
+        cvar_ = ep.conditional_value_at_risk(self.portfolio_returns)
         return (cvar_, cvar_ * net_liquidation)
 
 
 if __name__ == "__main__":
-    app = IBApp("127.0.0.1", 7497, client_id=11, account="DU7129120")
+    try:
+        app = IBApp("127.0.0.1", 7497, client_id=11, account="DUH506452")
 
-    aapl = stock("AAPL", "SMART", "USD")
+        
+    
+        # aapl = stock("AAPL", "SMART", "USD")
+    
+        # # market order value
+        # app.order_value(aapl, market, 1000, action=BUY)
+    
+        # time.sleep(10)
+    
+        # # market order target quantity
+        # app.order_target_quantity(aapl, market, 30)
+    
+        # time.sleep(10)
+    
+        # # market order percent
+        # app.order_percent(aapl, market, 0.1, action=BUY)
+        # # app.order_percent(aapl, limit, 0.1, action=BUY, limit_price=185.0)
+        # time.sleep(10)
+        # # market order target value
+        # # app.order_target_value(aapl, market, 3000)
+        # app.order_target_value(aapl, stop, 3000, stop_price=180.0)
+        # time.sleep(10)
+        # # market order target percent
+        # app.order_target_percent(aapl, market, 0.3)
+    
+        time.sleep(20)
 
-    # market order value
-    # app.order_value(aapl, market, 1000, action=BUY)
-
-    # market order target quantity
-    # app.order_target_quantity(aapl, market, -5)
-
-    # market order percent
-    # app.order_percent(aapl, market, 0.1, action=BUY)
-    # app.order_percent(aapl, limit, 0.1, action=BUY, limit_price=185.0)
-
-    # market order target value
-    # app.order_target_value(aapl, market, 3000)
-    # app.order_target_value(aapl, stop, 3000, stop_price=180.0)
-
-    # market order target percent
-    app.order_target_percent(aapl, market, 0.5)
-
-    time.sleep(30)
-    app.disconnect()
+        print(app.cumulative_returns)
+        print(app.max_drawdown)
+        print(app.volatility)
+        print(app.omega_ratio)
+        print(app.sharpe_ratio)
+        print(app.cvar)
+    except Exception as e:
+        print(e)
+    else:
+        pass
+    finally:
+        app.disconnect()

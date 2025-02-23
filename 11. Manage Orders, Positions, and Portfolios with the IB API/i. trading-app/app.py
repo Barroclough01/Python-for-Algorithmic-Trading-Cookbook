@@ -52,31 +52,36 @@ class IBApp(IBWrapper, IBClient):
 
 
 if __name__ == "__main__":
-    app = IBApp("127.0.0.1", 7497, client_id=11)
-
-    aapl = stock("AAPL", "SMART", "USD")
-
-    # send a limit order
-    order_1 = limit(BUY, 10, 185.0)
-    order_1_id = app.send_order(aapl, order_1)
-
-    time.sleep(3)
-
-    # cancel the order
-    app.cancel_order_by_id(order_1_id)
-
-    time.sleep(3)
-
-    # send another limit order
-    order_1_id = app.send_order(aapl, order_1)
-
-    time.sleep(3)
-
-    order_2 = limit(BUY, 10, 187.50)
-    app.update_order(aapl, order_2, order_1_id)
-
-    time.sleep(3)
-
-    app.cancel_all_orders()
-
-    app.disconnect()
+    try:
+        app = IBApp("127.0.0.1", 7497, client_id=11)
+    
+        aapl = stock("AAPL", "SMART", "USD")
+    
+        # send a limit order
+        order_1 = limit(BUY, 10, 185.0)
+        order_1_id = app.send_order(aapl, order_1)
+    
+        time.sleep(3)
+    
+        # cancel the order
+        app.cancel_order_by_id(order_1_id)
+    
+        time.sleep(3)
+    
+        # send another limit order
+        order_1_id = app.send_order(aapl, order_1)
+    
+        time.sleep(3)
+    
+        order_2 = limit(BUY, 10, 187.50)
+        app.update_order(aapl, order_2, order_1_id)
+    
+        time.sleep(3)
+    
+        app.cancel_all_orders()
+    except Exception as e:
+        print(e)
+    else:
+        time.sleep(10)
+    finally:
+        app.disconnect()

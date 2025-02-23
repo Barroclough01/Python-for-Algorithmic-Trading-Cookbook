@@ -10,7 +10,8 @@ def market(action, quantity):
     order.action = action
     order.orderType = "MKT"
     order.totalQuantity = quantity
-
+    order.eTradeOnly = False
+    order.firmQuoteOnly = False
     return order
 
 
