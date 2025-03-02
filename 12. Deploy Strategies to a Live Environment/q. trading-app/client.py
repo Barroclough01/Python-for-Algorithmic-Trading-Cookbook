@@ -135,7 +135,6 @@ class IBClient(EClient):
             fmt = "%Y%m%d %H:%M:%S %Z"
         data = self.historical_data[request_id]
         df = pd.DataFrame(data, columns=TRADE_BAR_PROPERTIES)
-        print(df.head())
         df.set_index(pd.to_datetime(df.time, format=fmt), inplace=True)
         df.drop("time", axis=1, inplace=True)
         df["symbol"] = contract.symbol

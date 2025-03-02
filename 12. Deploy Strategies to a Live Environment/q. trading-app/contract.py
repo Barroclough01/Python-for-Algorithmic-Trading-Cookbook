@@ -41,7 +41,6 @@ def combo_leg(contract_details, ratio, action):
     leg.ratio = ratio
     leg.action = action
     leg.exchange = contract_details.contract.exchange
-    leg.primaryExchange = contract_details.contract.primaryExchange
     return leg
 
 

@@ -84,10 +84,10 @@ class IBWrapper(EWrapper):
             order_id,
             client_id,
             status,
-            filled,
-            remaining,
-            last_fill_price,
-            avg_fill_price,
+            float(filled),
+            float(remaining),
+            float(last_fill_price) if last_fill_price else None,
+            float(avg_fill_price) if avg_fill_price else None,
         )
         cursor.execute(query, values)
 
@@ -101,7 +101,7 @@ class IBWrapper(EWrapper):
             contract.exchange,
             order.action,
             order.orderType,
-            order.totalQuantity,
+            float(order.totalQuantity),
             order_state.status,
         )
         cursor.execute(query, values)
@@ -116,7 +116,7 @@ class IBWrapper(EWrapper):
             contract.currency,
             execution.execId,
             execution.orderId,
-            execution.shares,
+            float(execution.shares),
             execution.lastLiquidity,
         )
         cursor.execute(query, values)

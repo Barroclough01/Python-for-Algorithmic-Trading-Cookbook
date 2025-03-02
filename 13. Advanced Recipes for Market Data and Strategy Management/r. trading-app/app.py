@@ -98,13 +98,18 @@ class IBApp(IBWrapper, IBClient):
 
 
 if __name__ == "__main__":
-    app = IBApp(
-        "127.0.0.1",
-        7497,
-        client_id=12,
-        account="DU7129120",
-        interval=10,
-        cvar_threshold=-500,
-    )
-
-    app.disconnect()
+    try:
+        app = IBApp(
+            "127.0.0.1",
+            7497,
+            client_id=12,
+            account="DUH506452",
+            interval=10,
+            cvar_threshold=-500,
+        )
+    except Exception as e:
+        print(e)
+    else:
+        time.sleep(180)
+    finally:
+        app.disconnect()

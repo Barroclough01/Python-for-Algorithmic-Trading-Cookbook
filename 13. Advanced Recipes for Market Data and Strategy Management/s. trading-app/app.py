@@ -111,7 +111,7 @@ if __name__ == "__main__":
         "127.0.0.1",
         7497,
         client_id=12,
-        account="DU7129120",
+        account="DUH506452",
         interval=10,
         cvar_threshold=-2000,
     )

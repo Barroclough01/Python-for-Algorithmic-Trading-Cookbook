@@ -152,15 +152,19 @@ INSERT INTO end_of_day (
 
 
 if __name__ == "__main__":
-    app = IBApp(
-        "127.0.0.1",
-        7497,
-        client_id=12,
-        account="DU7129120",
-        interval=10,
-        cvar_threshold=-2000,
-    )
-
-    app.store_end_of_day()
-
-    app.disconnect()
+    try:
+            app = IBApp(
+                "127.0.0.1",
+                7497,
+                client_id=12,
+                account="DUH506452",
+                interval=10,
+                cvar_threshold=-2000,
+        )
+    except Exception as e:
+        print(e)
+    else:
+        app.store_end_of_day()
+        time.sleep(60)
+    finally:
+        app.disconnect()
